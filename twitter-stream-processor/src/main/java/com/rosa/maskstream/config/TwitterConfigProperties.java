@@ -10,6 +10,4 @@ public class TwitterConfigProperties {
     private String apiSecretKey;
     private String tokenSecret;
     private String accessToken;
-
-    private KafkaTemplate kafkaTemplate;
 }

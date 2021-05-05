@@ -1,0 +1,13 @@
+mask-twitter:
+  apiKey: "jnOSbJICJ2OSh2ErDnLneyCuV"
+  apiSecretKey: "rTaHnREdYdHSe4RDNfRb4n4XQvWWVllMNUcg9rTZquXgVImSaT"
+  tokenSecret: "D4Xqh8lXuKgYRFrL67uzFsNxzYUzwTNFWyYBcN2L8BjfO"
+  accessToken: "95814850-OtRKLZXD6F1lYHX3fgdTYjcWBNNcbtyBomXkCYtyI"
+  keyWords: ""
+
+mask-kafka:
+  maskTopic: "mask-events"
+  bootStrapServers: "localhost:9092"
+  acksConfig: "all"
+  retriesConfig: 5
+  replicationFactor: 3
