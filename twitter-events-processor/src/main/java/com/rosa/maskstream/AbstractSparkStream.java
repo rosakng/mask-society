@@ -1,4 +1,4 @@
-package com.rosa.maskstream.consumer;
+package com.rosa.maskstream;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -36,6 +36,7 @@ public abstract class AbstractSparkStream implements CommandLineRunner {
                 ConsumerStrategies.Subscribe(topics, kafkaParams));
 
         log.info(String.valueOf(twitterMessages));
+        System.out.println(String.valueOf(twitterMessages));
 
         // Start the computation
         javaStreamingContext.start();

@@ -1,27 +1,26 @@
 package com.rosa.maskstream;
 
-import com.rosa.maskstream.config.KafkaProperties;
-import com.rosa.maskstream.consumer.twitter.SparkStream;
-import lombok.extern.slf4j.Slf4j;
+import com.rosa.maskstream.consumer.SparkStream;
+import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
-import org.springframework.context.annotation.Bean;
 
 @SpringBootApplication
-@EnableConfigurationProperties({KafkaProperties.class})
-@Slf4j
-public class MaskstreamApplication {
+public class MaskstreamApplication implements CommandLineRunner{
 
-	public MaskstreamApplication(){
+	private final SparkStream sparkStream;
+
+	public MaskstreamApplication(SparkStream sparkStream) {
+		this.sparkStream = sparkStream;
 	}
 
 	public static void main(String[] args) {
 		SpringApplication.run(MaskstreamApplication.class, args);
 	}
 
-	@Bean
-	public SparkStream sparkStream(KafkaProperties kafkaProperties) {
-		return new SparkStream(kafkaProperties);
+	@Override
+	public void run(String... args) {
+		sparkStream.run();
 	}
+
 }
