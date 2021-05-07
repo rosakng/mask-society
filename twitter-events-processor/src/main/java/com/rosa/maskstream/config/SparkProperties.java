@@ -5,10 +5,10 @@ import lombok.Setter;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
-@Component
-@Getter
-@Setter
-@ConfigurationProperties("mask-kafka-consumer")
+//@Component
+//@Getter
+//@Setter
+//@ConfigurationProperties("mask-kafka-consumer")
 public class SparkProperties {
     private String AppName;
     private String master;

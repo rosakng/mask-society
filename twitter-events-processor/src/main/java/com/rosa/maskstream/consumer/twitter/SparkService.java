@@ -40,5 +40,16 @@ public class SparkService {
                 javaStreamingContext,
                 LocationStrategies.PreferConsistent(),
                 ConsumerStrategies.Subscribe(Collections.singletonList(kafkaProperties.getTopic()), kafkaConsumerConfig.KafkaConsumerConfigs()));
+
+        log.info(String.valueOf(twitterMessages));
+
+        // Start the computation
+        javaStreamingContext.start();
+        try {
+            javaStreamingContext.awaitTermination();
+        } catch (InterruptedException e) {
+            log.error("Interrupted: {}", e);
+            // Restore interrupted state...
+        }
     }
 }
