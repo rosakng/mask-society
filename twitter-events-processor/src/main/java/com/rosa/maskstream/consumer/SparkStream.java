@@ -1,11 +1,13 @@
 package com.rosa.maskstream.consumer;
 
-import com.fasterxml.jackson.core.type.TypeReference;
+import com.datastax.spark.connector.japi.CassandraJavaUtil;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
+import com.rosa.maskstream.config.ApiProperties;
 import com.rosa.maskstream.config.KafkaConsumerConfig;
 import com.rosa.maskstream.config.KafkaProperties;
+import com.rosa.maskstream.externalApi.Api;
 import com.rosa.maskstream.model.Tweet;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -17,12 +19,11 @@ import org.apache.spark.streaming.api.java.JavaStreamingContext;
 import org.apache.spark.streaming.kafka010.ConsumerStrategies;
 import org.apache.spark.streaming.kafka010.KafkaUtils;
 import org.apache.spark.streaming.kafka010.LocationStrategies;
-import org.json.simple.JSONObject;
 import org.springframework.stereotype.Service;
-import scala.Tuple2;
 
-import java.util.Map;
 import java.util.Objects;
+
+import static com.datastax.spark.connector.japi.CassandraJavaUtil.mapToRow;
 
 @Service
 @Slf4j
@@ -30,11 +31,13 @@ public class SparkStream {
 
     private final KafkaConsumerConfig kafkaConsumerConfig;
     private final KafkaProperties kafkaProperties;
+    private final ApiProperties apiProperties;
 
-    public SparkStream(KafkaConsumerConfig kafkaConsumerConfig, KafkaProperties kafkaProperties) {
+    public SparkStream(KafkaConsumerConfig kafkaConsumerConfig, KafkaProperties kafkaProperties, ApiProperties apiProperties) {
         super();
         this.kafkaConsumerConfig = kafkaConsumerConfig;
         this.kafkaProperties = kafkaProperties;
+        this.apiProperties = apiProperties;
     }
 
     public void run () {
@@ -45,51 +48,47 @@ public class SparkStream {
 
         JavaStreamingContext javaStreamingContext = new JavaStreamingContext(twitterSparkConfig, Durations.seconds(10));
 
-        JavaInputDStream<ConsumerRecord<String, String>> tweetStream = KafkaUtils.createDirectStream(
+        JavaInputDStream<ConsumerRecord<String, String>> kafkaStream = KafkaUtils.createDirectStream(
                 javaStreamingContext,
                 LocationStrategies.PreferConsistent(),
                 ConsumerStrategies.Subscribe(ImmutableList.of(kafkaProperties.getTopic()), kafkaConsumerConfig.consumerConfigs()));
 
-        JavaDStream<Tweet> lines = tweetStream.map(consumerRecord -> {
+        Api api = new Api(apiProperties);
+
+        JavaDStream<Tweet> tweetJavaDStream = kafkaStream.map(consumerRecord -> {
             JsonNode streamPayload = new ObjectMapper().readTree(consumerRecord.value());
             JsonNode tweetPayload = streamPayload.get("value");
             JsonNode userPayload = tweetPayload.get("user");
 
-            String id = tweetPayload.get("id").toString();
-            String createdAt = tweetPayload.get("created_at").textValue();
-            String userName = userPayload.get("screen_name").textValue();
-            String location = userPayload.get("location").textValue();
-            String text = tweetPayload.get("text").textValue();
-            //need to call api and get cosine
-            String cosine_sim = ""
-            Tweet tweet = new Tweet(id, createdAt, userName, location, text, cosine_sim);
-        }).filter(Objects::nonNull).map();
-        //Count the tweets and print
-        lines.count()
-                .map(cnt -> "Popular hash tags in last 60 seconds (" + cnt + " total tweets):")
-                .print();
-
-        //
-        lines
-                .mapToPair(hashTag -> new Tuple2<>(hashTag, 1))
-                .reduceByKey((a, b) -> Integer.sum(a, b))
-                .mapToPair(stringIntegerTuple2 -> stringIntegerTuple2.swap())
-                .foreachRDD(rrdd -> {
-                    log.info("------------------------------------------------");
-                    //Counts
-                    rrdd.sortByKey(false).collect()
-                            .forEach(record -> {
-                                System.out.println(String.format(" %s (%d)", record._2, record._1));
-                            });
+            return Tweet.builder()
+                    .id(tweetPayload.get("id").toString())
+                    .createdAt(tweetPayload.get("created_at").textValue())
+                    .userName(userPayload.get("screen_name").toString())
+                    .location(userPayload.get("location").toString())
+                    .text(tweetPayload.get("text").toString())
+                    .build();
+        })
+                .filter(Objects::nonNull)
+                .map(tweet -> {
+                    Double similarityScore = api.getSimilarityScore(tweet.getText());
+                    tweet.setCosineSimilarity(similarityScore);
+                    return tweet;
                 });
 
-        // Start the computation
+        tweetJavaDStream.foreachRDD(tweetJavaRDD -> CassandraJavaUtil
+                .javaFunctions(tweetJavaRDD)
+                .writerBuilder(
+                        CassandraTweetWriter.TWEET_KEYSPACE_NAME,
+                        CassandraTweetWriter.TWEET_TABLE_NAME,
+                        mapToRow(Tweet.class))
+                .saveToCassandra());
+
+
         javaStreamingContext.start();
         try {
             javaStreamingContext.awaitTermination();
         } catch (InterruptedException e) {
             log.error("Interrupted: {}", e);
-            // Restore interrupted state...
         }
     }
 }

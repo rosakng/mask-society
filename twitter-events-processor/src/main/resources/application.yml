@@ -6,3 +6,8 @@ kafka:
     batch-interval: 10
     auto-offset: earliest
     client-id: earliest
+
+api:
+  url: https://api.cohere.ai/baseline-squid/similarity
+  token: xxx
+  anchor: masks are taking away freedom
