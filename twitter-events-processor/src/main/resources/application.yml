@@ -2,7 +2,7 @@ kafka:
   consumer:
     bootstrap-servers: 127.0.0.1:9092
     group-id: test
-    topic: mask-streams-input
+    topic: mask-tweets-input
     batch-interval: 10
     auto-offset: earliest
     client-id: earliest
