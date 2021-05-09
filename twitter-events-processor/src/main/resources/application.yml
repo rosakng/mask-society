@@ -4,10 +4,10 @@ kafka:
     group-id: test
     topic: mask-tweets-input
     batch-interval: 10
-    auto-offset: earliest
+    auto-offset: latest
     client-id: earliest
 
 api:
   url: https://api.cohere.ai/baseline-squid/similarity
-  token: xxx
+  token: E5TUGcS6shd411RUM96vgRVb1C2JmDfhMAlNQZ5X
   anchor: masks are taking away freedom

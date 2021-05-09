@@ -3,7 +3,6 @@ package com.rosa.maskstream.externalApi;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.rosa.maskstream.config.ApiProperties;
-import lombok.extern.slf4j.Slf4j;
 import org.json.simple.JSONObject;
 
 import java.io.BufferedReader;
@@ -16,7 +15,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 
 @SuppressWarnings("unchecked")
-@Slf4j
+//@Slf4j
 public class Api {
 
     private final ApiProperties apiProperties;
@@ -55,7 +54,7 @@ public class Api {
             JsonNode jsonNode = new ObjectMapper().readTree(response.toString());
             String split = jsonNode.get("similarities").toString();
             Double cosineSim = Double.valueOf(split.substring(1, split.length()-1));
-            log.info("Generated Cosine Similarity: {}", cosineSim);
+//            log.info("Generated Cosine Similarity: {}", cosineSim);
             return cosineSim;
         }
     }

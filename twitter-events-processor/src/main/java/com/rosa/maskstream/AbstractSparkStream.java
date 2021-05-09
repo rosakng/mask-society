@@ -12,7 +12,7 @@ import org.springframework.boot.CommandLineRunner;
 import java.util.List;
 import java.util.Map;
 
-@Slf4j
+//@Slf4j
 public abstract class AbstractSparkStream implements CommandLineRunner {
 
     public AbstractSparkStream() {
@@ -24,7 +24,7 @@ public abstract class AbstractSparkStream implements CommandLineRunner {
 
     @Override
     public void run(String... args) throws Exception {
-        log.info("Starting {}", this.getClass().getSimpleName());
+//        log.info("Starting {}", this.getClass().getSimpleName());
 
         JavaStreamingContext javaStreamingContext = getJavaStreamingContext();
         Map<String, Object> kafkaParams = getKafkaConsumerConfigProperties();
@@ -35,7 +35,7 @@ public abstract class AbstractSparkStream implements CommandLineRunner {
                 LocationStrategies.PreferConsistent(),
                 ConsumerStrategies.Subscribe(topics, kafkaParams));
 
-        log.info(String.valueOf(twitterMessages));
+//        log.info(String.valueOf(twitterMessages));
         System.out.println(String.valueOf(twitterMessages));
 
         // Start the computation
@@ -43,7 +43,7 @@ public abstract class AbstractSparkStream implements CommandLineRunner {
         try {
             javaStreamingContext.awaitTermination();
         } catch (InterruptedException e) {
-            log.error("Interrupted: {}", e);
+//            log.error("Interrupted: {}", e);
             // Restore interrupted state...
         }
     }

@@ -1,13 +1,13 @@
 package com.rosa.maskstream.consumer;
 
-
 import com.datastax.driver.core.Cluster;
 import com.datastax.driver.core.Session;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Component;
 
 import java.util.List;
 
-@Slf4j
+//@Slf4j
 public class CassandraConnector {
 
     private Cluster cluster;
@@ -20,9 +20,8 @@ public class CassandraConnector {
             clusterBuilder.withPort(port);
         }
 
-        cluster = clusterBuilder.build();
-
-        session = cluster.connect();
+        this.cluster = clusterBuilder.build();
+        this.session = cluster.connect();
     }
 
     public Session getSession() {
@@ -30,8 +29,8 @@ public class CassandraConnector {
     }
 
     public void close() {
-        session.close();
-        cluster.close();
+        this.session.close();
+        this.cluster.close();
     }
 
     public void createKeyspace(String keyspaceName, String replicationStrategy, int replicationFactor) {
@@ -42,13 +41,13 @@ public class CassandraConnector {
                 "'class':'" + replicationStrategy +
                 "','replication_factor':" + replicationFactor +
                 "};";
-        log.info("Executing query: {}", query);
-        session.execute(query);
+        System.out.println("QUERY: " + query);
+        this.session.execute(query);
     }
 
 
     public void createTable(String keyspaceName, String tableName, List<String> columnNames) {
-        String columns = String.join(",", columnNames);
+        String columns = String.join(", ", columnNames);
 
         String query = "CREATE TABLE IF NOT EXISTS " +
                 keyspaceName + "." +
@@ -56,8 +55,8 @@ public class CassandraConnector {
                 columns +
                 ");";
 
-        log.info("Creating table: {}", query);
-        session.execute(query);
+        System.out.println("QUERY: " + query);
+        this.session.execute(query);
     }
 
 }

@@ -6,15 +6,17 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.util.UUID;
+
 @Getter
 @Setter
 @AllArgsConstructor
 @Builder
 public class Tweet {
-    String id;
+    UUID id;
     String createdAt;
-    String userName;
+    String username;
     String location;
-    String text;
-    Double cosineSimilarity = -1.0;
+    String tweetText;
+    Double simScore = -1.0;
 }

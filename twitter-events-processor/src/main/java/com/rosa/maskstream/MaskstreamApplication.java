@@ -10,11 +10,15 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 public class MaskstreamApplication implements CommandLineRunner{
 
 	private final SparkStream sparkStream;
-	private final CassandraTweetWriter cassandraTweetWriter;
-
-	public MaskstreamApplication(SparkStream sparkStream, CassandraTweetWriter cassandraTweetWriter) {
+//	private final CassandraTweetWriter cassandraTweetWriter;
+//
+//	public MaskstreamApplication(SparkStream sparkStream, CassandraTweetWriter cassandraTweetWriter) {
+//		this.sparkStream = sparkStream;
+//		this.cassandraTweetWriter = cassandraTweetWriter;
+//	}
+//
+ 	public MaskstreamApplication(SparkStream sparkStream) {
 		this.sparkStream = sparkStream;
-		this.cassandraTweetWriter = cassandraTweetWriter;
 	}
 
 	public static void main(String[] args) {
@@ -22,8 +26,9 @@ public class MaskstreamApplication implements CommandLineRunner{
 	}
 
 	@Override
-	public void run(String... args) {
-		cassandraTweetWriter.run();
+	public void run(String... args) throws InterruptedException {
+ 		CassandraTweetWriter writer = new CassandraTweetWriter();
+		writer.run();
 		sparkStream.run();
 	}
 
