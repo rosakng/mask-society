@@ -1,22 +1,18 @@
 package com.rosa.maskstream.model;
 
-
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 
 import java.util.UUID;
 
 @Getter
 @Setter
 @AllArgsConstructor
-@Builder
+@ToString
 public class Tweet {
     UUID id;
     String createdAt;
     String username;
     String location;
     String tweetText;
-    Double simScore = -1.0;
+    String simScore;
 }

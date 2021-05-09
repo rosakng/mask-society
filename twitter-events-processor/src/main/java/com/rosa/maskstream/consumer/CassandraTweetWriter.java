@@ -8,7 +8,7 @@ import java.util.List;
 public class CassandraTweetWriter {
 
     public static final String TWEET_KEYSPACE_NAME ="maskstream";
-    public static final String TWEET_TABLE_NAME ="tweets";
+    public static final String TWEET_TABLE_NAME ="testtweets";
 
     private static final String REPLICATION_STRATEGY = "SimpleStrategy";
     private static final int REPLICATION_FACTOR = 1;

@@ -7,6 +7,7 @@ import com.rosa.maskstream.config.ApiProperties;
 import com.rosa.maskstream.config.KafkaProperties;
 import com.rosa.maskstream.externalApi.Api;
 import com.rosa.maskstream.model.Tweet;
+import org.apache.commons.lang.StringUtils;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpPost;
@@ -14,10 +15,14 @@ import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.impl.client.HttpClients;
+import org.apache.http.util.EntityUtils;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.apache.spark.SparkConf;
+import org.apache.spark.api.java.function.FlatMapFunction;
+import org.apache.spark.api.java.function.Function;
+import org.apache.spark.storage.StorageLevel;
 import org.apache.spark.streaming.Durations;
 import org.apache.spark.streaming.api.java.JavaDStream;
 import org.apache.spark.streaming.api.java.JavaStreamingContext;
@@ -28,15 +33,14 @@ import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.springframework.stereotype.Service;
 
-import java.io.IOException;
-import java.io.UnsupportedEncodingException;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Objects;
+import java.io.*;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.nio.charset.StandardCharsets;
+import java.util.*;
+import java.util.concurrent.TimeUnit;
 
-import static com.datastax.spark.connector.japi.CassandraJavaUtil.javaFunctions;
-import static com.datastax.spark.connector.japi.CassandraJavaUtil.mapToRow;
+import static com.datastax.spark.connector.japi.CassandraJavaUtil.*;
 
 @Service
 public class SparkStream {
@@ -58,7 +62,7 @@ public class SparkStream {
                 .set("spark.executor.memory", "1g");
 
         System.out.println("TWITTER CONF: " + twitterSparkConfig.toString());
-        JavaStreamingContext javaStreamingContext = new JavaStreamingContext(twitterSparkConfig, Durations.seconds(10));
+        JavaStreamingContext javaStreamingContext = new JavaStreamingContext(twitterSparkConfig, Durations.seconds(20));
 
         HashMap<String, Object> props = new HashMap<>();
         props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaProperties.getBootStrapServers());
@@ -73,8 +77,6 @@ public class SparkStream {
                 LocationStrategies.PreferConsistent(),
                 ConsumerStrategies.<String, String>Subscribe(Arrays.asList(kafkaProperties.getTopic()), props));
 
-        Api api = new Api(apiProperties);
-
         JavaDStream<Tweet> tweetJavaDStream = kafkaStream.map(consumerRecord -> {
 //            JSONObject tweetObj = (JSONObject) new JSONParser().parse(consumerRecord.value());
 //            JSONObject valueObj = (JSONObject) tweetObj.get("value");
@@ -84,70 +86,76 @@ public class SparkStream {
             System.out.println("STREAM PAYLOAD: "+ streamPayload.toString());
             JsonNode userPayload = streamPayload.get("user");
             System.out.println("USER PAYLOAD: "+ userPayload.toString());
-            return Tweet.builder()
-                    .id(UUIDs.timeBased())
-                    .createdAt(streamPayload.get("created_at").textValue())
-                    .username(userPayload.get("screen_name").toString())
-                    .location(userPayload.get("location").toString())
-                    .tweetText(streamPayload.get("text").toString())
-                    .build();
+            if (userPayload.get("location")!= null || !StringUtils.isEmpty(userPayload.get("location").toString()) || !userPayload.get("location").toString().equals("null")) {
+                return new Tweet(
+                        UUIDs.timeBased(),
+                        streamPayload.get("created_at").textValue(),
+                        userPayload.get("screen_name").toString(),
+                        userPayload.get("location").toString(),
+                        streamPayload.get("text").toString(),
+                        "-1.0");
+            }
+            return null;
         });
-//                .filter(Objects::nonNull)
-//                .map(tweet -> {
-//                    RequestConfig.custom()
-//                    Double similarityScore = api.getSimilarityScore(tweet.getTweetText());
-//                    tweet.setSimScore(similarityScore);
-//                    System.out.println("TWEEEEET" + tweet.toString());
-//                    System.out.println("SCORE: "+ similarityScore);
-//                    return tweet;
-//                });
 
         tweetJavaDStream
-                .filter(Objects::nonNull)
-                .foreachRDD(rdd -> {
-                    rdd.foreachPartition(partitionOfRecords -> {
-                        RequestConfig requestConfig = RequestConfig.custom()
-                                .setConnectionRequestTimeout(10000)
-                                .setConnectTimeout(10000)
-                                .setSocketTimeout(10000)
-                                .build();
-                        CloseableHttpClient httpClient = HttpClients.createDefault();
-                        HttpPost post = new HttpPost(apiProperties.getUrl());
+                .filter(obj -> obj != null && obj.getLocation() != null)
+//                .foreachRDD(rdd -> {
+//                    rdd.foreachPartition(partitionOfRecords -> {
+//                        RequestConfig requestConfig = RequestConfig.custom()
+//                                .setConnectionRequestTimeout(6000)
+//                                .setConnectTimeout(10000)
+//                                .setSocketTimeout(10000)
+//                                .build();
+//                        CloseableHttpClient httpClient = HttpClientBuilder.create().build();
+//                        HttpPost post = new HttpPost("https://api.cohere.ai/baseline-squid/similarity");
+//                        post.setConfig(requestConfig);
+//                        partitionOfRecords.forEachRemaining(record -> {
+//                            String json = "{\"anchor\":" + "\"masks are taking away freedom\"" +
+//                                    ",\"targets\":[" + record.getTweetText() + "]}";
+//
+//                            System.out.println("REQUEST JSON: " + json);
+//                            StringEntity entity = null;
+//                            try {
+//                                entity = new StringEntity(json);
+//                            } catch (UnsupportedEncodingException e) {
+//                                e.printStackTrace();
+//                            }
+//                            post.setEntity(entity);
+//                            post.setHeader("Accept", "application/json");
+//                            post.setHeader("Content-type", "application/json");
+//                            post.setHeader("Authorization", "Bearer: E5TUGcS6shd411RUM96vgRVb1C2JmDfhMAlNQZ5X");
+//                            try {
+//                                CloseableHttpResponse httpResponse = httpClient.execute(post);
+////                                Thread.sleep(5000);
+//                                String response = EntityUtils.toString(httpResponse.getEntity(), "UTF-8");
+//                                System.out.println("HTTP RESPONSE: "+ response);
+//                                JsonNode jsonNode = new ObjectMapper().readTree(response);
+//                                String split = jsonNode.get("similarities").toString();
+//                                record.setSimScore(split.substring(1, split.length()-1));
+//                            } catch (Exception e) {
+//                                System.out.println("THERE WAS A PROBLEM");
+//                                e.printStackTrace();
+//
+//                            }
+//                            System.out.println("FINALIZED TWEET" + record.toString());
+//                        });
+//                        httpClient.close();
+//                    });
 
-                        partitionOfRecords.forEachRemaining(record -> {
-                            String json = "{\"anchor\":" + apiProperties.getAnchor() +
-                                    ",\"targets\":[" + record.getTweetText() + "]}";
+        .map(tweet -> {
+            tweet.setSimScore("test");
+            return tweet;
+        });
 
-                            System.out.println("REQUEST JSON: " + json);
-                            StringEntity entity = null;
-                            try {
-                                entity = new StringEntity(json);
-                            } catch (UnsupportedEncodingException e) {
-                                e.printStackTrace();
-                            }
-                            post.setEntity(entity);
-                            post.setHeader("Accept", "application/json");
-                            post.setHeader("Content-type", "application/json");
-                            post.setHeader("Authorization", "Bearer: " + apiProperties.getToken());
-                            try {
-                                CloseableHttpResponse response = httpClient.execute(post);
-                                System.out.println("HTTP RESPONSE: "+ response);
-                                JsonNode jsonNode = new ObjectMapper().readTree(response.toString());
-                                String split = jsonNode.get("similarities").toString();
-                                Double cosineSim = Double.valueOf(split.substring(1, split.length()-1));
-                                record.setSimScore(cosineSim);
-                            } catch (IOException e) {
-                                e.printStackTrace();
-                            }
-                        });
-                    });
-                });
 
         tweetJavaDStream.foreachRDD(tweetJavaRDD -> {
+            System.out.println("WRITING TO DB");
             javaFunctions(tweetJavaRDD).writerBuilder(
                     CassandraTweetWriter.TWEET_KEYSPACE_NAME,
                     CassandraTweetWriter.TWEET_TABLE_NAME,
-                    mapToRow(Tweet.class)).saveToCassandra();
+                    mapToRow(Tweet.class))
+                    .saveToCassandra();
         });
 
         javaStreamingContext.start();
