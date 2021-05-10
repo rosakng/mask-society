@@ -38,12 +38,14 @@ public class SparkStream {
                 .setMaster("local[2]")
                 .set("spark.executor.memory", "1g");
 
-        JavaStreamingContext javaStreamingContext = new JavaStreamingContext(twitterSparkConfig, Durations.seconds(kafkaProperties.getBatchInterval()));
+        JavaStreamingContext javaStreamingContext =
+                new JavaStreamingContext(twitterSparkConfig, Durations.seconds(kafkaProperties.getBatchInterval()));
 
         JavaDStream<ConsumerRecord<String, String>> kafkaStream = KafkaUtils.createDirectStream(
                 javaStreamingContext,
                 LocationStrategies.PreferConsistent(),
-                ConsumerStrategies.Subscribe(Collections.singletonList(kafkaProperties.getTopic()), kafkaConsumerConfig.consumerConfigs()));
+                ConsumerStrategies.Subscribe(
+                        Collections.singletonList(kafkaProperties.getTopic()), kafkaConsumerConfig.consumerConfigs()));
 
         JavaDStream<Tweet> tweetJavaDStream = kafkaStream.map(consumerRecord -> {
             System.out.println("CONSUMER RECORD: " + consumerRecord.value());
@@ -53,22 +55,29 @@ public class SparkStream {
             System.out.println("USER PAYLOAD: " + userPayload.toString());
             JsonNode location = userPayload.get("location");
             JsonNode text = streamPayload.get("text");
-            if (location == null || !StringUtils.isEmpty(location.toString()) || location.toString().equals("null") ||
-                    !location.toString().toLowerCase(Locale.ROOT).contains("usa") ||
-                    !location.toString().toLowerCase(Locale.ROOT).contains("canada")) {
+            if ((location == null || StringUtils.isEmpty(location.toString()) || location.toString().equals("null"))) {
                 return null;
             }
+            System.out.println("LOCATION TEXT1: " + location.toString());
+
             String characterFilter = "[^\\p{L}\\p{M}\\p{N}\\p{P}\\p{Z}\\p{Cf}\\p{Cs}\\s]"; //removes symbols and emojis
-            String cleanedTweetText = text.toString().replaceAll(characterFilter,"");
+            String locationText = location.toString().replaceAll(characterFilter, "").toLowerCase();
+            System.out.println("LOCATION TEXT: " + locationText);
+            if ((!locationText.contains("usa") &&
+                    !locationText.contains("canada"))) {
+                return null;
+            }
+            String cleanedTweetText = text.toString().replaceAll(characterFilter, "");
+            System.out.println("CLEAN TWEET " + cleanedTweetText);
             return new Tweet(
                     UUIDs.timeBased(),
-                    streamPayload.get("created_at").textValue(),
+                    streamPayload.get("created_at").toString(),
                     userPayload.get("screen_name").toString(),
-                    userPayload.get("location").toString(),
+                    location.toString(),
                     cleanedTweetText,
                     -1.0);
         }).filter(object ->
-                object != null || !StringUtils.isEmpty(object.getLocation()) || object.getLocation().equals("null"))
+                object != null && !StringUtils.isEmpty(object.getLocation()) && !object.getLocation().equals("null"))
                 .map(tweet -> {
                     Api.calculateSimilarity(tweet);
                     return tweet;
