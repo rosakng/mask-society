@@ -8,6 +8,7 @@ import com.rosa.maskstream.config.KafkaProperties;
 import com.rosa.maskstream.externalApi.Api;
 import com.rosa.maskstream.model.Tweet;
 import lombok.AllArgsConstructor;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.spark.SparkConf;
 import org.apache.spark.streaming.Durations;
@@ -19,7 +20,7 @@ import org.apache.spark.streaming.kafka010.LocationStrategies;
 import org.springframework.stereotype.Service;
 
 import java.util.Collections;
-import java.util.Objects;
+import java.util.Locale;
 
 import static com.datastax.spark.connector.japi.CassandraJavaUtil.javaFunctions;
 import static com.datastax.spark.connector.japi.CassandraJavaUtil.mapToRow;
@@ -50,14 +51,24 @@ public class SparkStream {
             System.out.println("STREAM PAYLOAD: " + streamPayload.toString());
             JsonNode userPayload = streamPayload.get("user");
             System.out.println("USER PAYLOAD: " + userPayload.toString());
+            JsonNode location = userPayload.get("location");
+            JsonNode text = streamPayload.get("text");
+            if (location == null || !StringUtils.isEmpty(location.toString()) || location.toString().equals("null") ||
+                    !location.toString().toLowerCase(Locale.ROOT).contains("usa") ||
+                    !location.toString().toLowerCase(Locale.ROOT).contains("canada")) {
+                return null;
+            }
+            String characterFilter = "[^\\p{L}\\p{M}\\p{N}\\p{P}\\p{Z}\\p{Cf}\\p{Cs}\\s]"; //removes symbols and emojis
+            String cleanedTweetText = text.toString().replaceAll(characterFilter,"");
             return new Tweet(
                     UUIDs.timeBased(),
                     streamPayload.get("created_at").textValue(),
                     userPayload.get("screen_name").toString(),
                     userPayload.get("location").toString(),
-                    streamPayload.get("text").toString(),
+                    cleanedTweetText,
                     -1.0);
-        }).filter(Objects::nonNull)
+        }).filter(object ->
+                object != null || !StringUtils.isEmpty(object.getLocation()) || object.getLocation().equals("null"))
                 .map(tweet -> {
                     Api.calculateSimilarity(tweet);
                     return tweet;
