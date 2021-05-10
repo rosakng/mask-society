@@ -1,10 +1,13 @@
 package com.rosa.maskstream.consumer;
 
+import lombok.NoArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.util.Arrays;
 import java.util.List;
 
+@Component
+@NoArgsConstructor
 public class CassandraTweetWriter {
 
     public static final String TWEET_KEYSPACE_NAME ="maskstream";
@@ -19,13 +22,10 @@ public class CassandraTweetWriter {
             "username text",
             "location text",
             "tweet_text text",
-            "sim_score text",
+            "sim_score double",
             "PRIMARY KEY (id)");
 
     private final CassandraConnector cassandraConnector = new CassandraConnector();
-
-    public CassandraTweetWriter() {
-    }
 
     public void run () {
         System.out.println("KAFKA INITIALIZATION");

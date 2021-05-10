@@ -14,5 +14,5 @@ public class Tweet {
     String username;
     String location;
     String tweetText;
-    String simScore;
+    Double simScore;
 }

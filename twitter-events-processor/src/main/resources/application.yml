@@ -3,11 +3,11 @@ kafka:
     bootstrap-servers: 127.0.0.1:9092
     group-id: test
     topic: mask-tweets-input
-    batch-interval: 10
+    batch-interval: 20
     auto-offset: latest
     client-id: earliest
 
 api:
   url: https://api.cohere.ai/baseline-squid/similarity
-  token: E5TUGcS6shd411RUM96vgRVb1C2JmDfhMAlNQZ5X
+  token: xxx
   anchor: masks are taking away freedom

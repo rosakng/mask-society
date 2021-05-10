@@ -2,12 +2,9 @@ package com.rosa.maskstream.consumer;
 
 import com.datastax.driver.core.Cluster;
 import com.datastax.driver.core.Session;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Component;
 
 import java.util.List;
 
-//@Slf4j
 public class CassandraConnector {
 
     private Cluster cluster;

@@ -1,88 +1,84 @@
 package com.rosa.maskstream.externalApi;
 
-import com.datastax.driver.mapping.annotations.Transient;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.rosa.maskstream.config.ApiProperties;
 import com.rosa.maskstream.model.Tweet;
-import org.json.simple.JSONObject;
+import org.apache.commons.text.similarity.CosineSimilarity;
+import org.apache.http.client.config.RequestConfig;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.entity.StringEntity;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClientBuilder;
+import org.apache.http.util.EntityUtils;
 
-import javax.ws.rs.client.Client;
-import javax.ws.rs.core.MultivaluedHashMap;
-import javax.ws.rs.core.Response;
-import java.io.*;
-import java.net.HttpURLConnection;
-import java.net.URI;
-import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
+import java.io.IOException;
+import java.io.Serializable;
+import java.io.UnsupportedEncodingException;
+import java.util.HashMap;
 import java.util.Map;
-import javax.ws.rs.client.Client;
-import javax.ws.rs.client.ClientBuilder;
-import javax.ws.rs.client.Entity;
-import javax.ws.rs.core.HttpHeaders;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.MultivaluedHashMap;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.Response.Status;
-import javax.xml.bind.DatatypeConverter;
-
 
 @SuppressWarnings("unchecked")
-//@Slf4j
-public class Api {
+public class Api implements Serializable {
 
-    static class getSimilarityScore implements Serializable {
-        final URI uri;
-        final Map<String, List<Object>> headers;
-        final Serializable entity;
+    public static final String ANCHOR = "masks are taking away freedom";
 
-        public getSimilarityScore(URI uri, Map<String, List<Object>> headers, Serializable entity) {
-            this.uri = uri;
-            this.headers = headers;
-            this.entity = entity;
+    public static void post(Tweet tweet) throws IOException {
+        RequestConfig requestConfig = RequestConfig.custom()
+                .setConnectionRequestTimeout(10000)
+                .setConnectTimeout(10000)
+                .setSocketTimeout(10000)
+                .build();
+        CloseableHttpClient httpClient = HttpClientBuilder.create().build();
+        HttpPost post = new HttpPost("https://api.cohere.ai/baseline-squid/similarity");
+        post.setConfig(requestConfig);
+        String json = "{\"anchor\":" + "\"masks are taking away freedom\"" +
+                ",\"targets\":[" + tweet.getTweetText() + "]}";
+
+        System.out.println("REQUEST JSON: " + json);
+        StringEntity entity = null;
+        try {
+            entity = new StringEntity(json);
+        } catch (UnsupportedEncodingException e) {
+            e.printStackTrace();
+        }
+        post.setEntity(entity);
+        post.setHeader("Accept", "application/json");
+        post.setHeader("Content-type", "application/json");
+        post.setHeader("Authorization", "Bearer: E5TUGcS6shd411RUM96vgRVb1C2JmDfhMAlNQZ5X");
+        try {
+            CloseableHttpResponse httpResponse = httpClient.execute(post);
+            String response = EntityUtils.toString(httpResponse.getEntity(), "UTF-8");
+            System.out.println("HTTP RESPONSE: " + response);
+            JsonNode jsonNode = new ObjectMapper().readTree(response);
+            String split = jsonNode.get("similarities").toString();
+            tweet.setSimScore(Double.valueOf(split.substring(1, split.length() - 1)));
+        } catch (Exception e) {
+            System.out.println("THERE WAS A PROBLEM");
+            e.printStackTrace();
+
+        }
+        System.out.println("FINALIZED TWEET" + tweet.toString());
+        httpClient.close();
+    }
+
+    public static void calculateSimilarity(Tweet tweet) {
+        String s1 = tweet.getTweetText();
+
+        Map<CharSequence, Integer> vector1 = new HashMap<>();
+        Map<CharSequence, Integer> vector2 = new HashMap<>();
+
+        for (String token : s1.split(" ")) {
+            vector1.put(token, vector1.getOrDefault(token, 0) + 1);
         }
 
-        public Response post(javax.ws.rs.client.Client client) {
-            MultivaluedHashMap<String, Object> multimap = new MultivaluedHashMap<String, Object>();
-            headers.forEach((k,v) -> multimap.put(k, v));
-
-            return client.target(uri)
-                    .request()
-                    .headers(multimap)
-                    .post(Entity.text(entity));
+        for (String token : ANCHOR.split(" ")) {
+            vector2.put(token, vector2.getOrDefault(token, 0) + 1);
         }
+        CosineSimilarity cosine = new CosineSimilarity();
 
-//        HttpURLConnection con = (HttpURLConnection)url.openConnection();
-//        con.setRequestMethod("POST");
-//        con.setRequestProperty("Content-Type", "application/json; utf-8");
-//        con.setRequestProperty("Accept", "application/json");
-//        con.setRequestProperty("Authorization", "Bearer: " + apiProperties.getToken());
-//        con.setDoOutput(true);
-//
-//        JSONObject jsonObject = new JSONObject();
-//        jsonObject.put("anchor", apiProperties.getAnchor());
-//        jsonObject.put("targets", Arrays.asList(tweet.getTweetText()));
-//
-//
-//        try(OutputStream os = con.getOutputStream()) {
-//            byte[] input = jsonObject.toJSONString().getBytes(StandardCharsets.UTF_8);
-//            os.write(input, 0, input.length);
-//        }
-//
-//        try(BufferedReader br = new BufferedReader(
-//                new InputStreamReader(con.getInputStream(), StandardCharsets.UTF_8))) {
-//            StringBuilder response = new StringBuilder();
-//            String responseLine;
-//            while ((responseLine = br.readLine()) != null) {
-//                response.append(responseLine.trim());
-//            }
-//            JsonNode jsonNode = new ObjectMapper().readTree(response.toString());
-//            String split = jsonNode.get("similarities").toString();
-//            Double cosineSim = Double.valueOf(split.substring(1, split.length()-1));
-////            log.info("Generated Cosine Similarity: {}", cosineSim);
-//            tweet.setSimScore(cosineSim);
-        }
+        System.out.println("FINALIZED TWEET" + tweet.toString());
+        tweet.setSimScore(cosine.cosineSimilarity(vector1, vector2));
+    }
 
 }
