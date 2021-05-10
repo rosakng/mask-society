@@ -8,6 +8,7 @@ import com.rosa.maskstream.config.KafkaProperties;
 import com.rosa.maskstream.externalApi.Api;
 import com.rosa.maskstream.model.Tweet;
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.spark.SparkConf;
@@ -20,13 +21,13 @@ import org.apache.spark.streaming.kafka010.LocationStrategies;
 import org.springframework.stereotype.Service;
 
 import java.util.Collections;
-import java.util.Locale;
 
 import static com.datastax.spark.connector.japi.CassandraJavaUtil.javaFunctions;
 import static com.datastax.spark.connector.japi.CassandraJavaUtil.mapToRow;
 
 @Service
 @AllArgsConstructor
+@Slf4j
 public class SparkStream {
 
     private final KafkaConsumerConfig kafkaConsumerConfig;
@@ -48,27 +49,27 @@ public class SparkStream {
                         Collections.singletonList(kafkaProperties.getTopic()), kafkaConsumerConfig.consumerConfigs()));
 
         JavaDStream<Tweet> tweetJavaDStream = kafkaStream.map(consumerRecord -> {
-            System.out.println("CONSUMER RECORD: " + consumerRecord.value());
+            log.info("CONSUMER RECORD: {}", consumerRecord.value());
             JsonNode streamPayload = new ObjectMapper().readTree(consumerRecord.value());
-            System.out.println("STREAM PAYLOAD: " + streamPayload.toString());
+            log.info("STREAM PAYLOAD: {}", streamPayload.toString());
             JsonNode userPayload = streamPayload.get("user");
-            System.out.println("USER PAYLOAD: " + userPayload.toString());
+            log.info("USER PAYLOAD: {}", userPayload.toString());
             JsonNode location = userPayload.get("location");
             JsonNode text = streamPayload.get("text");
             if ((location == null || StringUtils.isEmpty(location.toString()) || location.toString().equals("null"))) {
                 return null;
             }
-            System.out.println("LOCATION TEXT1: " + location.toString());
+            log.info("LOCATION TEXT1: {}", location.toString());
 
             String characterFilter = "[^\\p{L}\\p{M}\\p{N}\\p{P}\\p{Z}\\p{Cf}\\p{Cs}\\s]"; //removes symbols and emojis
             String locationText = location.toString().replaceAll(characterFilter, "").toLowerCase();
-            System.out.println("LOCATION TEXT: " + locationText);
+            log.info("LOCATION TEXT: {}", locationText);
             if ((!locationText.contains("usa") &&
                     !locationText.contains("canada"))) {
                 return null;
             }
             String cleanedTweetText = text.toString().replaceAll(characterFilter, "");
-            System.out.println("CLEAN TWEET " + cleanedTweetText);
+            log.info("CLEAN TWEET " + cleanedTweetText);
             return new Tweet(
                     UUIDs.timeBased(),
                     streamPayload.get("created_at").toString(),
@@ -84,7 +85,7 @@ public class SparkStream {
                 });
 
         tweetJavaDStream.foreachRDD(tweetJavaRDD -> {
-            System.out.println("WRITING TO DB");
+            log.info("WRITING TO DB");
             javaFunctions(tweetJavaRDD).writerBuilder(
                     CassandraTweetWriter.TWEET_KEYSPACE_NAME,
                     CassandraTweetWriter.TWEET_TABLE_NAME,

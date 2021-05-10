@@ -3,6 +3,7 @@ package com.rosa.maskstream.externalApi;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.rosa.maskstream.model.Tweet;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.text.similarity.CosineSimilarity;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.CloseableHttpResponse;
@@ -19,6 +20,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 @SuppressWarnings("unchecked")
+@Slf4j
 public class Api implements Serializable {
 
     public static final String ANCHOR = "masks are taking away freedom";
@@ -35,7 +37,7 @@ public class Api implements Serializable {
         String json = "{\"anchor\":" + "\"masks are taking away freedom\"" +
                 ",\"targets\":[" + tweet.getTweetText() + "]}";
 
-        System.out.println("REQUEST JSON: " + json);
+        log.info("REQUEST JSON: {}", json);
         StringEntity entity = null;
         try {
             entity = new StringEntity(json);
@@ -49,16 +51,16 @@ public class Api implements Serializable {
         try {
             CloseableHttpResponse httpResponse = httpClient.execute(post);
             String response = EntityUtils.toString(httpResponse.getEntity(), "UTF-8");
-            System.out.println("HTTP RESPONSE: " + response);
+            log.info("HTTP RESPONSE: {}", response);
             JsonNode jsonNode = new ObjectMapper().readTree(response);
             String split = jsonNode.get("similarities").toString();
             tweet.setSimScore(Double.valueOf(split.substring(1, split.length() - 1)));
         } catch (Exception e) {
-            System.out.println("THERE WAS A PROBLEM");
+            log.error("THERE WAS A PROBLEM");
             e.printStackTrace();
 
         }
-        System.out.println("FINALIZED TWEET" + tweet.toString());
+        log.info("FINALIZED TWEET: {}", tweet.toString());
         httpClient.close();
     }
 
@@ -77,8 +79,7 @@ public class Api implements Serializable {
         }
         CosineSimilarity cosine = new CosineSimilarity();
 
-        System.out.println("FINALIZED TWEET" + tweet.toString());
+        log.info("FINALIZED TWEET: {}", tweet.toString());
         tweet.setSimScore(cosine.cosineSimilarity(vector1, vector2));
     }
-
 }

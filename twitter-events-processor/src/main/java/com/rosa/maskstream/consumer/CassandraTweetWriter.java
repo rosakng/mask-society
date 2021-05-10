@@ -1,6 +1,7 @@
 package com.rosa.maskstream.consumer;
 
 import lombok.NoArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.util.Arrays;
@@ -8,6 +9,7 @@ import java.util.List;
 
 @Component
 @NoArgsConstructor
+@Slf4j
 public class CassandraTweetWriter {
 
     public static final String TWEET_KEYSPACE_NAME ="maskstream";
@@ -28,7 +30,7 @@ public class CassandraTweetWriter {
     private final CassandraConnector cassandraConnector = new CassandraConnector();
 
     public void run () {
-        System.out.println("KAFKA INITIALIZATION");
+        log.info("KAFKA INITIALIZATION");
         cassandraConnector.connect("127.0.0.1", null);
         cassandraConnector.createKeyspace(TWEET_KEYSPACE_NAME, REPLICATION_STRATEGY, REPLICATION_FACTOR);
         cassandraConnector.createTable(TWEET_KEYSPACE_NAME, TWEET_TABLE_NAME, SCHEMA_PARAMS);

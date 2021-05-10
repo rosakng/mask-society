@@ -2,9 +2,11 @@ package com.rosa.maskstream.consumer;
 
 import com.datastax.driver.core.Cluster;
 import com.datastax.driver.core.Session;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.List;
 
+@Slf4j
 public class CassandraConnector {
 
     private Cluster cluster;
@@ -38,7 +40,7 @@ public class CassandraConnector {
                 "'class':'" + replicationStrategy +
                 "','replication_factor':" + replicationFactor +
                 "};";
-        System.out.println("QUERY: " + query);
+        log.info("QUERY: {}", query);
         this.session.execute(query);
     }
 
@@ -52,7 +54,7 @@ public class CassandraConnector {
                 columns +
                 ");";
 
-        System.out.println("QUERY: " + query);
+        log.info("QUERY: {}", query);
         this.session.execute(query);
     }
 
