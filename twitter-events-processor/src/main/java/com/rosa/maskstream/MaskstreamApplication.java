@@ -1,7 +1,7 @@
 package com.rosa.maskstream;
 
 import com.rosa.maskstream.consumer.CassandraTweetWriter;
-import com.rosa.maskstream.consumer.SparkStream;
+import com.rosa.maskstream.consumer.MaskTweetsStreamProcessor;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -9,11 +9,11 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 @SpringBootApplication
 public class MaskstreamApplication implements CommandLineRunner{
 
-	private final SparkStream sparkStream;
+	private final MaskTweetsStreamProcessor maskTweetsStreamProcessor;
 	private final CassandraTweetWriter cassandraTweetWriter;
 
-	public MaskstreamApplication(SparkStream sparkStream, CassandraTweetWriter cassandraTweetWriter) {
-		this.sparkStream = sparkStream;
+	public MaskstreamApplication(MaskTweetsStreamProcessor maskTweetsStreamProcessor, CassandraTweetWriter cassandraTweetWriter) {
+		this.maskTweetsStreamProcessor = maskTweetsStreamProcessor;
 		this.cassandraTweetWriter = cassandraTweetWriter;
 	}
 
@@ -24,7 +24,7 @@ public class MaskstreamApplication implements CommandLineRunner{
 	@Override
 	public void run(String... args) throws InterruptedException {
 		cassandraTweetWriter.run();
-		sparkStream.run();
+		maskTweetsStreamProcessor.run();
 	}
 
 }

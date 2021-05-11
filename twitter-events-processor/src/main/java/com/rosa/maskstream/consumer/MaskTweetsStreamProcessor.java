@@ -21,14 +21,16 @@ import org.apache.spark.streaming.kafka010.LocationStrategies;
 import org.springframework.stereotype.Service;
 
 import java.util.Collections;
+import java.util.Optional;
 
 import static com.datastax.spark.connector.japi.CassandraJavaUtil.javaFunctions;
 import static com.datastax.spark.connector.japi.CassandraJavaUtil.mapToRow;
+import static com.rosa.maskstream.support.Constants.*;
 
 @Service
 @AllArgsConstructor
 @Slf4j
-public class SparkStream {
+public class MaskTweetsStreamProcessor {
 
     private final KafkaConsumerConfig kafkaConsumerConfig;
     private final KafkaProperties kafkaProperties;
@@ -59,36 +61,43 @@ public class SparkStream {
             if ((location == null || StringUtils.isEmpty(location.toString()) || location.toString().equals("null"))) {
                 return null;
             }
-            log.info("LOCATION TEXT1: {}", location.toString());
 
             String characterFilter = "[^\\p{L}\\p{M}\\p{N}\\p{P}\\p{Z}\\p{Cf}\\p{Cs}\\s]"; //removes symbols and emojis
             String locationText = location.toString().replaceAll(characterFilter, "").toLowerCase();
             log.info("LOCATION TEXT: {}", locationText);
-            if ((!locationText.contains("usa") &&
-                    !locationText.contains("canada"))) {
+
+            Optional<String> standardLocation = Optional.empty();
+            for (String place : LOCATIONS) {
+                if (locationText.contains(place)) {
+                    standardLocation = Optional.of(place);
+                }
+            }
+
+            if (!standardLocation.isPresent()) {
                 return null;
             }
+
             String cleanedTweetText = text.toString().replaceAll(characterFilter, "");
             log.info("CLEAN TWEET " + cleanedTweetText);
             return new Tweet(
                     UUIDs.timeBased(),
                     streamPayload.get("created_at").toString(),
                     userPayload.get("screen_name").toString(),
-                    location.toString(),
+                    standardLocation.get(),
                     cleanedTweetText,
-                    -1.0);
+                    "");
         }).filter(object ->
                 object != null && !StringUtils.isEmpty(object.getLocation()) && !object.getLocation().equals("null"))
                 .map(tweet -> {
-                    Api.calculateSimilarity(tweet);
+                    Api.processCosineSimIntoBuckets(tweet);
                     return tweet;
                 });
 
         tweetJavaDStream.foreachRDD(tweetJavaRDD -> {
             log.info("WRITING TO DB");
             javaFunctions(tweetJavaRDD).writerBuilder(
-                    CassandraTweetWriter.TWEET_KEYSPACE_NAME,
-                    CassandraTweetWriter.TWEET_TABLE_NAME,
+                    TWEET_KEYSPACE_NAME,
+                    TWEET_TABLE_NAME,
                     mapToRow(Tweet.class))
                     .saveToCassandra();
         });

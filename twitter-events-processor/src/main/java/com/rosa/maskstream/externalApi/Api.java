@@ -12,12 +12,16 @@ import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.util.EntityUtils;
+import scala.tools.cmd.Opt;
 
 import java.io.IOException;
 import java.io.Serializable;
 import java.io.UnsupportedEncodingException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
+
+import static com.rosa.maskstream.support.Constants.*;
 
 @SuppressWarnings("unchecked")
 @Slf4j
@@ -54,7 +58,7 @@ public class Api implements Serializable {
             log.info("HTTP RESPONSE: {}", response);
             JsonNode jsonNode = new ObjectMapper().readTree(response);
             String split = jsonNode.get("similarities").toString();
-            tweet.setSimScore(Double.valueOf(split.substring(1, split.length() - 1)));
+//            tweet.setCosSimBucket(Double.valueOf(split.substring(1, split.length() - 1)));
         } catch (Exception e) {
             log.error("THERE WAS A PROBLEM");
             e.printStackTrace();
@@ -64,7 +68,7 @@ public class Api implements Serializable {
         httpClient.close();
     }
 
-    public static void calculateSimilarity(Tweet tweet) {
+    public static void processCosineSimIntoBuckets(Tweet tweet) {
         String s1 = tweet.getTweetText();
 
         Map<CharSequence, Integer> vector1 = new HashMap<>();
@@ -78,8 +82,56 @@ public class Api implements Serializable {
             vector2.put(token, vector2.getOrDefault(token, 0) + 1);
         }
         CosineSimilarity cosine = new CosineSimilarity();
+        Double cosineSim = cosine.cosineSimilarity(vector1, vector2);
 
+        Optional<String> bucket = getBucketString(cosineSim);
+        tweet.setCosSimBucket(bucket.get());
         log.info("FINALIZED TWEET: {}", tweet.toString());
-        tweet.setSimScore(cosine.cosineSimilarity(vector1, vector2));
+    }
+
+    private static Optional<String> getBucketString(Double cosineSim) {
+        Optional<String> bucket;
+        if (cosineSim <= SIM_SCORE_BUCKET_1) {
+            bucket = Optional.of("sim<=" + SIM_SCORE_BUCKET_1);
+        } else if (cosineSim > SIM_SCORE_BUCKET_1 && cosineSim <= SIM_SCORE_BUCKET_2) {
+            bucket = Optional.of(SIM_SCORE_BUCKET_1 + "<sim<=" + SIM_SCORE_BUCKET_2);
+        } else if (cosineSim > SIM_SCORE_BUCKET_2 && cosineSim <= SIM_SCORE_BUCKET_3) {
+            bucket = Optional.of(SIM_SCORE_BUCKET_2 + "<sim<=" + SIM_SCORE_BUCKET_3);
+        } else if (cosineSim > SIM_SCORE_BUCKET_3 && cosineSim <= SIM_SCORE_BUCKET_4) {
+            bucket = Optional.of(SIM_SCORE_BUCKET_3 + "<sim<=" + SIM_SCORE_BUCKET_4);
+        } else if (cosineSim > SIM_SCORE_BUCKET_4 && cosineSim <= SIM_SCORE_BUCKET_5) {
+            bucket = Optional.of(SIM_SCORE_BUCKET_4 + "<sim<=" + SIM_SCORE_BUCKET_5);
+        } else if (cosineSim > SIM_SCORE_BUCKET_5 && cosineSim <= SIM_SCORE_BUCKET_6) {
+            bucket = Optional.of(SIM_SCORE_BUCKET_5 + "<sim<=" + SIM_SCORE_BUCKET_6);
+        } else if (cosineSim > SIM_SCORE_BUCKET_6 && cosineSim <= SIM_SCORE_BUCKET_7) {
+            bucket = Optional.of(SIM_SCORE_BUCKET_6 + "<sim<=" + SIM_SCORE_BUCKET_7);
+        } else if (cosineSim > SIM_SCORE_BUCKET_7 && cosineSim <= SIM_SCORE_BUCKET_8) {
+            bucket = Optional.of(SIM_SCORE_BUCKET_7 + "<sim<=" + SIM_SCORE_BUCKET_8);
+        } else if (cosineSim > SIM_SCORE_BUCKET_8 && cosineSim <= SIM_SCORE_BUCKET_9) {
+            bucket = Optional.of(SIM_SCORE_BUCKET_8 + "<sim<=" + SIM_SCORE_BUCKET_9);
+        } else if (cosineSim > SIM_SCORE_BUCKET_9 && cosineSim <= SIM_SCORE_BUCKET_10) {
+            bucket = Optional.of(SIM_SCORE_BUCKET_9 + "<sim<=" + SIM_SCORE_BUCKET_10);
+        } else if (cosineSim > SIM_SCORE_BUCKET_10 && cosineSim <= SIM_SCORE_BUCKET_11) {
+            bucket = Optional.of(SIM_SCORE_BUCKET_10 + "<sim<=" + SIM_SCORE_BUCKET_11);
+        } else if (cosineSim > SIM_SCORE_BUCKET_12 && cosineSim <= SIM_SCORE_BUCKET_13) {
+            bucket = Optional.of(SIM_SCORE_BUCKET_12 + "<sim<=" + SIM_SCORE_BUCKET_13);
+        } else if (cosineSim > SIM_SCORE_BUCKET_13 && cosineSim <= SIM_SCORE_BUCKET_14) {
+            bucket = Optional.of(SIM_SCORE_BUCKET_13 + "<sim<=" + SIM_SCORE_BUCKET_14);
+        } else if (cosineSim > SIM_SCORE_BUCKET_14 && cosineSim <= SIM_SCORE_BUCKET_15) {
+            bucket = Optional.of(SIM_SCORE_BUCKET_14 + "<sim<=" + SIM_SCORE_BUCKET_15);
+        } else if (cosineSim > SIM_SCORE_BUCKET_15 && cosineSim <= SIM_SCORE_BUCKET_16) {
+            bucket = Optional.of(SIM_SCORE_BUCKET_15 + "<sim<=" + SIM_SCORE_BUCKET_16);
+        } else if (cosineSim > SIM_SCORE_BUCKET_16 && cosineSim <= SIM_SCORE_BUCKET_17) {
+            bucket = Optional.of(SIM_SCORE_BUCKET_16 + "<sim<=" + SIM_SCORE_BUCKET_17);
+        } else if (cosineSim > SIM_SCORE_BUCKET_17 && cosineSim <= SIM_SCORE_BUCKET_18) {
+            bucket = Optional.of(SIM_SCORE_BUCKET_17 + "<sim<=" + SIM_SCORE_BUCKET_18);
+        } else if (cosineSim > SIM_SCORE_BUCKET_18 && cosineSim <= SIM_SCORE_BUCKET_19) {
+            bucket = Optional.of(SIM_SCORE_BUCKET_18 + "<sim<=" + SIM_SCORE_BUCKET_19);
+        } else if (cosineSim > SIM_SCORE_BUCKET_19 && cosineSim <= SIM_SCORE_BUCKET_20) {
+            bucket = Optional.of(SIM_SCORE_BUCKET_19 + "<sim<=" + SIM_SCORE_BUCKET_20);
+        } else {
+            bucket = Optional.of("sim>" + SIM_SCORE_BUCKET_20);
+        }
+        return bucket;
     }
 }
