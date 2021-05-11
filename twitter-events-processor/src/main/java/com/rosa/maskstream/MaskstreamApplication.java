@@ -26,5 +26,4 @@ public class MaskstreamApplication implements CommandLineRunner{
 		cassandraTweetWriter.run();
 		maskTweetsStreamProcessor.run();
 	}
-
 }

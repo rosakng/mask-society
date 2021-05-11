@@ -1,6 +1,9 @@
 package com.rosa.maskstream.model;
 
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.ToString;
 
 import java.util.UUID;
 
@@ -14,5 +17,5 @@ public class Tweet {
     String username;
     String location;
     String tweetText;
-    Double simScore;
+    String cosSimBucket;
 }
