@@ -3,7 +3,6 @@ package com.rosa.maskstream.rest;
 import com.datastax.driver.mapping.annotations.Table;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
-import lombok.NonNull;
 import lombok.Setter;
 
 @AllArgsConstructor
