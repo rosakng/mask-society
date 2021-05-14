@@ -57,4 +57,7 @@ public class Constants {
             "louisiana",
             "connecticut"
     );
+
+    public static final String ANCHOR = "masks are taking away freedom";
+
 }
