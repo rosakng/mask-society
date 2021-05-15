@@ -7,7 +7,7 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
-public class MaskstreamApplication implements CommandLineRunner{
+public class MaskstreamApplication implements CommandLineRunner {
 
 	private final MaskTweetsStreamProcessor maskTweetsStreamProcessor;
 	private final CassandraTweetWriter cassandraTweetWriter;
