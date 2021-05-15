@@ -1,4 +1,4 @@
-package com.rosa.maskstream.externalApi;
+package com.rosa.maskstream.external;
 
 import com.rosa.maskstream.model.Tweet;
 import lombok.extern.slf4j.Slf4j;
@@ -13,7 +13,7 @@ import static com.rosa.maskstream.support.Constants.*;
 
 @SuppressWarnings("unchecked")
 @Slf4j
-public class Api implements Serializable {
+public class TextSimilarity implements Serializable {
 
     public static void processCosineSimIntoBuckets(Tweet tweet) {
         String s1 = tweet.getTweetText();

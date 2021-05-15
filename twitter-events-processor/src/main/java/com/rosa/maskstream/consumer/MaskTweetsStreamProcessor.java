@@ -5,7 +5,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.rosa.maskstream.config.KafkaConsumerConfig;
 import com.rosa.maskstream.config.KafkaProperties;
-import com.rosa.maskstream.externalApi.Api;
+import com.rosa.maskstream.external.TextSimilarity;
 import com.rosa.maskstream.model.Tweet;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -89,7 +89,7 @@ public class MaskTweetsStreamProcessor {
         }).filter(object ->
                 object != null && !StringUtils.isEmpty(object.getLocation()) && !object.getLocation().equals("null"))
                 .map(tweet -> {
-                    Api.processCosineSimIntoBuckets(tweet);
+                    TextSimilarity.processCosineSimIntoBuckets(tweet);
                     return tweet;
                 });
 
