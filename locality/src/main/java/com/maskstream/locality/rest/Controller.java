@@ -5,13 +5,13 @@ import com.maskstream.locality.repository.TweetRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+
+import static com.maskstream.locality.support.Constants.SIM_SCORE_THRESHOLDS_LIST;
 
 @RestController
 public class Controller {
@@ -30,21 +30,26 @@ public class Controller {
             if (result.isEmpty()) {
                 return new ResponseEntity<>(HttpStatus.NO_CONTENT);
             }
-            List<SimilarityScore> employeesList = new ArrayList<>();
-            result.forEach(employeesList::add);
+            List<SimilarityScore> employeesList = new ArrayList<>(result);
             return new ResponseEntity<>(employeesList, HttpStatus.OK);
         } catch (Exception e) {
             return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
-    @GetMapping("/locations/{key}")
-    public ResponseEntity<SimilarityScore> getByLocationSimilarity(@PathVariable("key") String key) {
+    @GetMapping("/occurrences")
+    public ResponseEntity<List<SimilarityScore>> getByLocation(@RequestParam(required = true) String location) {
         try {
-            Optional<SimilarityScore> similarityScoreData = tweetRepository.findById(key);
-            return similarityScoreData
-                    .map(similarityScore -> new ResponseEntity<>(similarityScore, HttpStatus.OK))
-                    .orElseGet(() -> new ResponseEntity<>(HttpStatus.NOT_FOUND));
+            List<SimilarityScore> result = new ArrayList<>();
+            SIM_SCORE_THRESHOLDS_LIST.forEach(threshold -> {
+                String key = location.toLowerCase() + " " + threshold;
+                Optional<SimilarityScore> similarityScoreData = tweetRepository.findById(key);
+                similarityScoreData.ifPresent(result::add);
+            });
+            if (result.isEmpty()) {
+                return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+            }
+            return new ResponseEntity<>(result, HttpStatus.OK);
         } catch (Exception e) {
             return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
         }
