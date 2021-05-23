@@ -18,7 +18,7 @@ import static com.rosa.maskstream.support.Constants.*;
 @AllArgsConstructor
 @Slf4j
 public class TweetAggregatorCron {
-    public static final String SIM_SCORE_TABLE = "sim_score_table";
+    public static final String SIM_SCORE_LOCATIONS = "sim-score-locations";
 
     private final CassandraConnector cassandraConnector = new CassandraConnector();
 
@@ -32,7 +32,7 @@ public class TweetAggregatorCron {
         log.info("INITIALIZING PERIODIC ROLLUP TASK");
         cassandraConnector.connect("127.0.0.1", 9042);
         cassandraConnector.createKeyspace(TWEET_KEYSPACE_NAME, REPLICATION_STRATEGY, REPLICATION_FACTOR);
-        cassandraConnector.createTable(TWEET_KEYSPACE_NAME, SIM_SCORE_TABLE, SCHEMA_PARAMS);
+        cassandraConnector.createTable(TWEET_KEYSPACE_NAME, SIM_SCORE_LOCATIONS, SCHEMA_PARAMS);
         runAggregatorTask();
         cassandraConnector.close();
     }
@@ -53,6 +53,6 @@ public class TweetAggregatorCron {
                 .reduceByKey(Long::sum);
 
         javaFunctions(cassandraRdd).writerBuilder(
-                TWEET_KEYSPACE_NAME, SIM_SCORE_TABLE, mapTupleToRow(String.class, Long.class)).saveToCassandra();
+                TWEET_KEYSPACE_NAME, SIM_SCORE_LOCATIONS, mapTupleToRow(String.class, Long.class)).saveToCassandra();
     }
 }

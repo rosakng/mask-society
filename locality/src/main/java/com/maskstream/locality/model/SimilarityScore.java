@@ -9,7 +9,7 @@ import org.springframework.data.cassandra.core.mapping.Table;
 @AllArgsConstructor
 @Getter
 @Setter
-@Table("sim_score_table")
+@Table("sim-score-locations")
 public class SimilarityScore {
     @PrimaryKey
     private String location_similarity;
