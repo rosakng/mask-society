@@ -25,7 +25,7 @@ public class Constants {
     public static final Double SIM_SCORE_BUCKET_19 = 0.95;
     public static final Double SIM_SCORE_BUCKET_20 = 1.0;
 
-    public static final String TWEET_KEYSPACE_NAME = "mask-stream";
+    public static final String TWEET_KEYSPACE_NAME = "maskstream";
     public static final String TWEET_TABLE_NAME = "tweets";
 
     public static final String REPLICATION_STRATEGY = "SimpleStrategy";

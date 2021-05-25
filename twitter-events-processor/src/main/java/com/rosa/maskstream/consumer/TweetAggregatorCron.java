@@ -18,7 +18,7 @@ import static com.rosa.maskstream.support.Constants.*;
 @AllArgsConstructor
 @Slf4j
 public class TweetAggregatorCron {
-    public static final String SIM_SCORE_LOCATIONS = "sim-score-locations";
+    public static final String SIM_SCORE_LOCATIONS = "sim_locations";
 
     private final CassandraConnector cassandraConnector = new CassandraConnector();
 
