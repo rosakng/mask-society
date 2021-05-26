@@ -25,6 +25,7 @@ public class TextSimilarity implements Serializable {
             vector1.put(token, vector1.getOrDefault(token, 0) + 1);
         }
 
+        // ANCHOR = "masks are taking away freedom";
         for (String token : ANCHOR.split(" ")) {
             vector2.put(token, vector2.getOrDefault(token, 0) + 1);
         }

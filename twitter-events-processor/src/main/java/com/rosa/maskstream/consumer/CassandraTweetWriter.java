@@ -27,8 +27,10 @@ public class CassandraTweetWriter {
 
     public void run() {
         log.info("KAFKA INITIALIZATION");
-        cassandraConnector.connect("127.0.0.1", null);
+        cassandraConnector.connect("127.0.0.1", 9042);
+        // REPLICATION_STRATEGY = "SimpleStrategy, REPLICATION_FACTOR = 1
         cassandraConnector.createKeyspace(TWEET_KEYSPACE_NAME, REPLICATION_STRATEGY, REPLICATION_FACTOR);
+        // TWEET_KEYSPACE_NAME = "maskstream", TWEET_TABLE_NAME = "tweets"
         cassandraConnector.createTable(TWEET_KEYSPACE_NAME, TWEET_TABLE_NAME, TWEET_TABLE_SCHEMA_PARAMS);
         cassandraConnector.close();
     }

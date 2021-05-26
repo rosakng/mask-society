@@ -15,13 +15,9 @@ import static com.maskstream.locality.support.Constants.SIM_SCORE_THRESHOLDS_LIS
 
 @RestController
 public class Controller {
+
     @Autowired
     TweetRepository tweetRepository;
-
-    @GetMapping(value = "/healthcheck", produces = "application/json; charset=utf-8")
-    public String getHealthCheck() {
-        return "{ \"isWorking\" : true }";
-    }
 
     @GetMapping("/locations")
     public ResponseEntity<List<SimilarityScore>> getAllLocationsAndScores() {

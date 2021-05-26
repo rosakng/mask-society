@@ -36,20 +36,27 @@ public class MaskTweetsStreamProcessor {
     private final KafkaProperties kafkaProperties;
 
     public void run() throws InterruptedException {
+        // Create Spark configuration with 2 threads
         SparkConf twitterSparkConfig = new SparkConf()
                 .setAppName("twitterKafka")
                 .setMaster("local[2]")
                 .set("spark.executor.memory", "1g");
 
+        // Create a streaming context with Spark configuration entry
+        // Batch Interval: The time interval at which streaming data will be divided into batches
         JavaStreamingContext javaStreamingContext =
                 new JavaStreamingContext(twitterSparkConfig, Durations.seconds(kafkaProperties.getBatchInterval()));
 
+        // JavaDStream: basic abstraction in Spark Streaming that represents a continuous stream of data
+        // Resilient Distributed Datasets: fault-tolerant collection of elements that can be operated on in parallel
         JavaDStream<ConsumerRecord<String, String>> kafkaStream = KafkaUtils.createDirectStream(
                 javaStreamingContext,
-                LocationStrategies.PreferConsistent(),
+                LocationStrategies.PreferConsistent(), // distribute partitions evenly across available executors
                 ConsumerStrategies.Subscribe(
+                        // Specify topic of interest and set Kafka Params
                         Collections.singletonList(kafkaProperties.getTopic()), kafkaConsumerConfig.consumerConfigs()));
 
+        // Aggregate each consumer record from Kafka topic
         JavaDStream<Tweet> tweetJavaDStream = kafkaStream.map(consumerRecord -> {
             log.info("CONSUMER RECORD: {}", consumerRecord.value());
             JsonNode streamPayload = new ObjectMapper().readTree(consumerRecord.value());
@@ -96,6 +103,7 @@ public class MaskTweetsStreamProcessor {
         tweetJavaDStream.foreachRDD(tweetJavaRDD -> {
             log.info("WRITING TO DB");
             javaFunctions(tweetJavaRDD).writerBuilder(
+                    // Write to maskstream.tweets
                     TWEET_KEYSPACE_NAME,
                     TWEET_TABLE_NAME,
                     mapToRow(Tweet.class))

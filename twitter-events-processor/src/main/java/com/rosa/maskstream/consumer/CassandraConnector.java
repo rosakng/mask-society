@@ -13,6 +13,7 @@ public class CassandraConnector {
     private Session session;
 
     public void connect(String node, Integer port) {
+        // Create cluster with one node
         Cluster.Builder clusterBuilder = Cluster.builder().addContactPoint(node);
 
         if (port != null) {
@@ -29,7 +30,6 @@ public class CassandraConnector {
     }
 
     public void createKeyspace(String keyspaceName, String replicationStrategy, int replicationFactor) {
-
         String query = "CREATE KEYSPACE IF NOT EXISTS " +
                 keyspaceName +
                 " WITH replication = {" +

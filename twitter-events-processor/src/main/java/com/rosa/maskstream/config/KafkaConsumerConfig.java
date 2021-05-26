@@ -26,6 +26,7 @@ public class KafkaConsumerConfig {
         props.put(ConsumerConfig.GROUP_ID_CONFIG, kafkaProperties.getGroupId());
         props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, kafkaProperties.getAutoOffset());
         props.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, false);
+        // Consumer's offset will not be periodically committed in the background
         return props;
     }
 }

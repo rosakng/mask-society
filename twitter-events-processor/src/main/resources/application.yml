@@ -1,8 +1,8 @@
 kafka:
   consumer:
-    bootstrap-servers: 127.0.0.1:9092
-    group-id: streams
+    bootstrap-servers: 127.0.0.1:9092 # Kafka broker port
+    group-id: streams # Unique string that identifies consumer group this consumer belongs to
     topic: mask-tweets-input
     batch-interval: 20
-    auto-offset: latest
-    client-id: earliest
+    auto-offset: latest # Automatically reset the offset to the latest offset
+    client-id: earliest # String passed to server when making requests. Tracks source of requests in server-side logging

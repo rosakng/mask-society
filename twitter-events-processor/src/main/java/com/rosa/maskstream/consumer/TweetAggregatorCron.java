@@ -32,6 +32,7 @@ public class TweetAggregatorCron {
         log.info("INITIALIZING PERIODIC ROLLUP TASK");
         cassandraConnector.connect("127.0.0.1", 9042);
         cassandraConnector.createKeyspace(TWEET_KEYSPACE_NAME, REPLICATION_STRATEGY, REPLICATION_FACTOR);
+        // Create table maskstream.sim_locations
         cassandraConnector.createTable(TWEET_KEYSPACE_NAME, SIM_SCORE_LOCATIONS, SCHEMA_PARAMS);
         runAggregatorTask();
         cassandraConnector.close();
@@ -45,14 +46,18 @@ public class TweetAggregatorCron {
                 .set("spark.executor.memory", "1g");
         JavaSparkContext sparkContext = new JavaSparkContext(twitterSparkConfig);
 
+        // JavaPairRDD: Dstreams but for key-value pairs
         JavaPairRDD<String, Long> cassandraRdd = javaFunctions(sparkContext)
                 .cassandraTable(TWEET_KEYSPACE_NAME, TWEET_TABLE_NAME)
                 .select("location", "cos_sim_bucket")
                 .where("id < minTimeuuid(?)", new Date())
+                // Take first and second schema params: location_similarity, num_occurrences
                 .mapToPair((s) -> new Tuple2<>(s.getString(0) + " " + s.getString(1), (long) 1))
+                // Increment each occurrence by key
                 .reduceByKey(Long::sum);
 
         javaFunctions(cassandraRdd).writerBuilder(
+                // Write RDD stream to maskstream.simLocations table
                 TWEET_KEYSPACE_NAME, SIM_SCORE_LOCATIONS, mapTupleToRow(String.class, Long.class)).saveToCassandra();
     }
 }
